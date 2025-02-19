@@ -24,7 +24,6 @@ NODES = [
   3, # H100 XMS
   4, # L40S
   5, # A100 SXM
-  6, # LOCAL
 ]
 
 # Functions
