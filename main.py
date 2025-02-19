@@ -18,7 +18,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 # Configurations
 ############################################
 
-SIMULATION_MODE = True
+SIMULATION_MODE = False
 
 NODE_ID = os.getenv('NODE_ID', 1)
 PROMPTS_FILE_PATH = './prompts.txt'
