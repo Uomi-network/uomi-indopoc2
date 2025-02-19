@@ -477,9 +477,9 @@ if __name__ == '__main__':
   # Setup
   setup()
 
-  # # Start the two loops threads and kill them if the main thread is killed
-  # loop_run_thread = threading.Thread(target=loop_run)
-  # loop_ping_thread = threading.Thread(target=loop_ping)
-  # loop_run_thread.start()
-  # loop_ping_thread.start()
+  # Start the two loops threads and kill them if the main thread is killed
+  loop_run_thread = threading.Thread(target=loop_run)
+  loop_ping_thread = threading.Thread(target=loop_ping)
+  loop_run_thread.start()
+  loop_ping_thread.start()
 
