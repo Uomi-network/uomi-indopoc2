@@ -53,7 +53,7 @@ def snapshot():
   snapshot_key = int(time.time())
   print(f'🤖 Snapshot start')
 
-  for db in [REDIS_NODES_DB, REDIS_CHECKS_DB, REDIS_COMPLETITION_DB, REDIS_PROMPTS_DB, REDIS_ASSIGNMENTS_DB]:
+  for db in [REDIS_NODES_DB, REDIS_ASSIGNMENTS_DB, REDIS_CHECKS_DB, REDIS_COMPLETITION_DB, REDIS_PROMPTS_DB]:
     print(f'- DB: {db}')
     snapshot_db(db, db != REDIS_PROMPTS_DB and db != REDIS_CHECKS_DB and db != REDIS_ASSIGNMENTS_DB)
   for node in NODES:
