@@ -154,7 +154,6 @@ def execute_inference(prompt, key):
     # GREEDY selection instead of sampling
     # This ensures full determinism.
     next_token_id = torch.multinomial(probs, num_samples=1).squeeze(1)
-    next_token_id = next_token_id[0]
     selected_token_id = next_token_id.item()
     selected_token_str = tokenizer.decode([selected_token_id])
     selected_token_prob = probs[0, selected_token_id].item()
