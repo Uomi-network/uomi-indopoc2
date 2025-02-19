@@ -155,7 +155,6 @@ def execute_inference(prompt, key):
     # This ensures full determinism.
     
     top_probs_from_indices = torch.gather(probs, 1, top_indices)
-    print(top_probs_from_indices)
     next_token_id = torch.multinomial(top_probs_from_indices, num_samples=1)
     selected_token_id = next_token_id.item()
     selected_token_str = tokenizer.decode([selected_token_id])
