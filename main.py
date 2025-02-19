@@ -150,6 +150,7 @@ def execute_inference(prompt, key):
         "id": idx.item()
       })
       # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
+    print(top_probs)
 
     # GREEDY selection instead of sampling
     # This ensures full determinism.
