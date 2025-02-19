@@ -150,12 +150,13 @@ def execute_inference(prompt, key):
         "id": idx.item()
       })
       # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
-    print(top_probs)
-    print(top_indices)
 
     # GREEDY selection instead of sampling
     # This ensures full determinism.
-    next_token_id = top_indices[torch.multinomial(top_probs, num_samples=1)]
+    
+    print("top_probs", top_probs)
+    print("top_indices", top_indices)
+    next_token_id = torch.multinomial(top_probs, num_samples=1)
     selected_token_id = next_token_id.item()
     selected_token_str = tokenizer.decode([selected_token_id])
     selected_token_prob = probs[0, selected_token_id].item()
