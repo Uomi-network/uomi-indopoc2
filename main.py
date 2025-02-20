@@ -136,11 +136,9 @@ def execute_inference(prompt, key):
       next_token_logits = torch.full_like(next_token_logits, float('-inf'))
       next_token_logits[0].scatter_(0, sorted_indices_1d, sorted_logits_1d)
 
-    # Convert to probabilities
-    probs = F.softmax(next_token_logits, dim=-1)  # shape: [1, vocab_size]
-
     # Print the top-k tokens by probability
-    top_probs, top_indices = probs.topk(TOP_K_EXECUTION, dim=-1)
+    top_probs, top_indices = next_token_logits.topk(TOP_K_EXECUTION, dim=-1)
+    probs = F.softmax(top_probs, dim=-1) # TEMP
     execution_data_top_k = []
     for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
       token_str = tokenizer.decode([idx.item()])
@@ -154,7 +152,7 @@ def execute_inference(prompt, key):
     # GREEDY selection instead of sampling
     # This ensures full determinism.
     
-    next_token_id = top_indices.select(-1, torch.multinomial(top_probs, num_samples=1).item()).unsqueeze(0)
+    next_token_id = top_indices.select(-1, torch.multinomial(probs, num_samples=1).item()).unsqueeze(0)
     selected_token_id = next_token_id.item()
     selected_token_str = tokenizer.decode([selected_token_id])
     selected_token_prob = probs[0, selected_token_id].item()
@@ -194,6 +192,7 @@ def execute_inference(prompt, key):
     "executed_by": NODE_ID,
     "executed_in": time.time() - time_start
   }
+  print(result)
   return json.dumps(result)
 
 # This function execute the check of an inference and return the result
@@ -344,7 +343,7 @@ def loop_run():
         print("Executing inference: " + str(key))
         prompt = r_prompts_db.get(key).decode('utf-8')
         result = execute_inference(prompt, key)
-        r_node_inferences_db.set(key, result)
+        # r_node_inferences_db.set(key, result) # TEMP
         prompts_runned_one = True
       else:
         print("Remaining op inference: " + str(remaining))

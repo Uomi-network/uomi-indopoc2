@@ -37,6 +37,8 @@ def main():
   error_rates = []
   position_rates = []
   max_position_changed = 0
+  max_execution_token_pos = 0
+  max_check_token_pos = 0
   for check in checks:
     check_data = get_check(check)
     execution_data = get_execution(check_data['key'], check_data['executed_by'])
@@ -73,6 +75,10 @@ def main():
       positions.append(position_change)
       if position_change > max_position_changed:
         max_position_changed = position_change
+      if execution_token_pos > max_execution_token_pos:
+        max_execution_token_pos = execution_token_pos
+      if check_token_pos > max_check_token_pos:
+        max_check_token_pos = check_token_pos
 
       
     error_rate = sum(errors) / len(errors)
@@ -86,6 +92,8 @@ def main():
   print(f'📈 Media errore su probabilità del token totale: {sum(error_rates) / len(error_rates)}')
   print(f'📈 Media errore sulla posizione del token totale: {sum(position_rates) / len(position_rates)}')
   print(f'📈 Massima differenza di posizione del token: {max_position_changed}')
+  print(f'📈 Massima posizione del token in esecuzione: {max_execution_token_pos}')
+  print(f'📈 Massima posizione del token in check: {max_check_token_pos}')
   
   position_changed = len([rate for rate in position_rates if rate > 0])
   print(f'📈 Controlli con token che ha cambiato posizione almeno una volta: {position_changed}')
