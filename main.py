@@ -149,23 +149,23 @@ def execute_inference(prompt, key):
     top_probs, top_indices = probs.topk(TOP_K_EXECUTION, dim=-1)
     print(f"-- time for top-k: {time.time() - time_start}")
     time_start = time.time()
-    execution_data_top_k = []
-    for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
-      token_str = tokenizer.decode([idx.item()])
-      execution_data_top_k.append({
-        "str": token_str,
-        "prob": prob.item(),
-        "id": idx.item()
-      })
     # execution_data_top_k = []
-    # for idx in top_indices[0]:
+    # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
     #   token_str = tokenizer.decode([idx.item()])
-    #   prob = probs[0, idx].item()
     #   execution_data_top_k.append({
     #     "str": token_str,
-    #     "prob": prob,
+    #     "prob": prob.item(),
     #     "id": idx.item()
     #   })
+    execution_data_top_k = []
+    for idx in top_indices[0]:
+      token_str = tokenizer.decode([idx.item()])
+      prob = probs[0, idx].item()
+      execution_data_top_k.append({
+        "str": token_str,
+        "prob": prob,
+        "id": idx.item()
+      })
     print(f"-- time for top-k loop: {time.time() - time_start}")
 
     # GREEDY selection instead of sampling
