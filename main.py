@@ -8,6 +8,7 @@ import json
 import traceback
 import hashlib
 import math
+import collections
 
 import torch
 import torch.nn.functional as F
