@@ -438,6 +438,7 @@ def setup():
   # Normalize prompts by remove last character if is a new line
   prompts = [inference.rstrip('\n') for inference in prompts]
   print("Prompts: " + str(len(prompts)))
+  return
   # Store every inference in the redis db using the hash_string of the inference as key (if not already stored)
   r_prompts_db_keys = r_prompts_db.keys()
   r_prompts_db_keys = [key.decode('utf-8') for key in r_prompts_db_keys]
@@ -479,9 +480,9 @@ if __name__ == '__main__':
   # Setup
   setup()
 
-  # Start the two loops threads and kill them if the main thread is killed
-  loop_run_thread = threading.Thread(target=loop_run)
-  loop_ping_thread = threading.Thread(target=loop_ping)
-  loop_run_thread.start()
-  loop_ping_thread.start()
+  # # Start the two loops threads and kill them if the main thread is killed
+  # loop_run_thread = threading.Thread(target=loop_run)
+  # loop_ping_thread = threading.Thread(target=loop_ping)
+  # loop_run_thread.start()
+  # loop_ping_thread.start()
 
