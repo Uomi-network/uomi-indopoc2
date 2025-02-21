@@ -445,7 +445,7 @@ Explain the concept of continuous integration and continuous delivery (CI/CD).
 Write a program in any language that counts the number of words in a text file.
 Describe how you would design a system for handling user uploads and file storage in a web application.
 Write a JavaScript function that creates a dynamic HTML table from an array of data.
-Explain the difference between front-end and back-end development.
+Explain the difference between front-end and back-end development regarding web applications development.
 Write a program in any language that implements a simple queue data structure.
 Describe how to set up a virtual machine.
 Explain how DNS works.
