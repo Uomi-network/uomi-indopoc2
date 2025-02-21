@@ -113,8 +113,10 @@ def execute_inference(prompt, key):
   for step in range(MAX_NEW_TOKENS):
     print(f"Step execute_inference {step + 1}/{MAX_NEW_TOKENS}")
     # Forward pass to get raw logits
+    time_start = time.time()
     outputs = model(input_ids=input_ids)
     next_token_logits = outputs.logits[:, -1, :]
+    print(f"-- time for next_token_logits: {time.time() - time_start}")
 
     # Apply temperature (if not 1.0)
     if TEMPERATURE != 1.0:
@@ -138,10 +140,14 @@ def execute_inference(prompt, key):
       next_token_logits[0].scatter_(0, sorted_indices_1d, sorted_logits_1d)
 
     # Convert to probabilities
+    time_start = time.time()
     probs = F.softmax(next_token_logits, dim=-1)  # shape: [1, vocab_size]
+    print(f"-- time for probs: {time.time() - time_start}")
 
     # Print the top-k tokens by probability
+    time_start = time.time()
     top_probs, top_indices = probs.topk(TOP_K_EXECUTION, dim=-1)
+    print(f"-- time for top-k: {time.time() - time_start}")
     # execution_data_top_k = []
     # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
     #   token_str = tokenizer.decode([idx.item()])
@@ -151,6 +157,7 @@ def execute_inference(prompt, key):
     #     "id": idx.item()
     #   })
     #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
+    time_start = time.time()
     execution_data_top_k = []
     for idx in top_indices[0]:
       token_str = tokenizer.decode([idx.item()])
@@ -160,17 +167,22 @@ def execute_inference(prompt, key):
         "prob": prob,
         "id": idx.item()
       })
+    print(f"-- time for top-k loop: {time.time() - time_start}")
 
     # GREEDY selection instead of sampling
     # This ensures full determinism.
     
+    time_start = time.time()
     next_token_id = top_indices.select(-1, torch.multinomial(top_probs, num_samples=1).item()).unsqueeze(0)
     selected_token_id = next_token_id.item()
     selected_token_str = tokenizer.decode([selected_token_id])
     selected_token_prob = probs[0, selected_token_id].item()
+    print(f"-- time for greedy selection: {time.time() - time_start}")
 
     # Append the chosen token
+    time_start = time.time()
     input_ids = torch.cat([input_ids, next_token_id], dim=-1)
+    print(f"-- time for input_ids concat: {time.time() - time_start}")
 
     # Append the execution data
     execution_data.append({
