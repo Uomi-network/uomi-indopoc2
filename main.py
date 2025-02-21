@@ -437,6 +437,7 @@ def setup():
     prompts = f.readlines()
   # Normalize prompts by remove last character if is a new line
   prompts = [inference.rstrip('\n') for inference in prompts]
+  print("Prompts: " + str(len(prompts)))
   # Store every inference in the redis db using the hash_string of the inference as key (if not already stored)
   r_prompts_db_keys = r_prompts_db.keys()
   r_prompts_db_keys = [key.decode('utf-8') for key in r_prompts_db_keys]
