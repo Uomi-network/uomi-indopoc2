@@ -47,19 +47,24 @@ def snapshot_db(db, override=False):
       continue
     with open(f'{snapshot_path}/{key}', 'w') as f:
       f.write(r.get(key).decode('utf-8'))
+  return len(keys)
 
 def snapshot():
   snapshot_key = int(time.time())
   print(f'🤖 Snapshot start')
 
+  db_keys = {}
+
   for db in [REDIS_NODES_DB, REDIS_ASSIGNMENTS_DB, REDIS_CHECKS_DB, REDIS_COMPLETITION_DB, REDIS_PROMPTS_DB]:
     print(f'- DB: {db}')
-    snapshot_db(db, db != REDIS_PROMPTS_DB and db != REDIS_CHECKS_DB and db != REDIS_ASSIGNMENTS_DB)
+    keys = snapshot_db(db, db != REDIS_PROMPTS_DB and db != REDIS_CHECKS_DB and db != REDIS_ASSIGNMENTS_DB)
+    db_keys[db] = keys
   for node in NODES:
     print(f'- Node: {node}')
     snapshot_db(node)
 
   print(f'✅ Snapshot done!')
+  return db_keys
 
 def recap():
   print(f'📊 Recap')
@@ -97,10 +102,24 @@ def recap():
 ############################################
 
 if __name__ == '__main__':
+  max_check_diff = 0
+  last_db_keys = snapshot()
+  last_db_time = int(time.time())
+  time.sleep(30)
+
   while True:
     print(' ')
-    snapshot()
+    db_keys = snapshot()
     print(' ')
     recap()
+    print(' ')
+    checks_diff = db_keys[REDIS_CHECKS_DB] - last_db_keys[REDIS_CHECKS_DB]
+    time_diff = int(time.time()) - last_db_time
+    print(f'📈 Checks diff: {checks_diff} ({checks_diff/time_diff} checks/sec)')
+    max_check_diff = max(max_check_diff, checks_diff)
+    print(f'📈 Max checks diff: {max_check_diff}')
+    print(' ')
+    last_db_keys = db_keys
+    last_db_time = int(time.time())
     print('*'*50)
     time.sleep(30)

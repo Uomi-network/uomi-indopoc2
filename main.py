@@ -142,15 +142,24 @@ def execute_inference(prompt, key):
 
     # Print the top-k tokens by probability
     top_probs, top_indices = probs.topk(TOP_K_EXECUTION, dim=-1)
+    # execution_data_top_k = []
+    # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
+    #   token_str = tokenizer.decode([idx.item()])
+    #   execution_data_top_k.append({
+    #     "str": token_str,
+    #     "prob": prob.item(),
+    #     "id": idx.item()
+    #   })
+    #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
     execution_data_top_k = []
-    for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
+    for idx in top_indices[0]:
       token_str = tokenizer.decode([idx.item()])
+      prob = probs[0, idx].item()
       execution_data_top_k.append({
         "str": token_str,
-        "prob": prob.item(),
+        "prob": prob,
         "id": idx.item()
       })
-      # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
 
     # GREEDY selection instead of sampling
     # This ensures full determinism.
@@ -266,17 +275,28 @@ def execute_check(inference):
     current_token_str = tokenizer.decode([current_token_id])
     top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
     index = 0
-    for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
+    # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
+    #   index += 1
+    #   token_str = tokenizer.decode([idx.item()])
+    #   check_data_top_k.append({
+    #     "str": token_str,
+    #     "prob": prob.item(),
+    #     "id": idx.item()
+    #   })
+    #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
+    #   if idx == current_token_id and index <= TOK_K_CHECK:
+    #     current_token_prob = float(prob.item())
+    for idx in top_indices[0]:
       index += 1
       token_str = tokenizer.decode([idx.item()])
+      prob = probs[0, idx].item()
       check_data_top_k.append({
         "str": token_str,
-        "prob": prob.item(),
+        "prob": prob,
         "id": idx.item()
       })
-      # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
       if idx == current_token_id and index <= TOK_K_CHECK:
-        current_token_prob = float(prob.item())
+        current_token_prob = float(prob)
     if current_token_prob is None:
       check_result = False
       check_data.append({
