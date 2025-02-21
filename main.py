@@ -438,6 +438,12 @@ def setup():
   # Normalize prompts by remove last character if is a new line
   prompts = [inference.rstrip('\n') for inference in prompts]
   print("Prompts: " + str(len(prompts)))
+
+  # Check if there are duplicates in the prompts, print the duplicate
+  duplicates = [item for item, count in collections.Counter(prompts).items() if count > 1]
+  if len(duplicates) > 0:
+    print("Duplicates: " + str(duplicates))
+
   return
   # Store every inference in the redis db using the hash_string of the inference as key (if not already stored)
   r_prompts_db_keys = r_prompts_db.keys()
