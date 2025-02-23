@@ -170,7 +170,6 @@ def execute_inference(prompt, key):
 
     # GREEDY selection instead of sampling
     # This ensures full determinism.
-    
     time_start = time.time()
     next_token_id = top_indices.select(-1, torch.multinomial(top_probs, num_samples=1).item()).unsqueeze(0)
     selected_token_id = next_token_id.item()
@@ -443,6 +442,10 @@ def loop_run():
 
     # Store the node's db in the completition db
     r_completition_db.set(str(NODE_ID), remaining)
+
+    # Update ping
+    r_nodes_db.set(str(NODE_ID), 1, ex=300)
+
     print("✅ Node " + str(NODE_ID) + " completed the run loop.")
   except Exception as e:
     print("❌ Node " + str(NODE_ID) + " failed to complete the run loop.")
@@ -452,15 +455,6 @@ def loop_run():
   # Re-run the loop
   time.sleep(1)
   loop_run()
-
-# Ping
-def loop_ping():
-  # Write the node id in the nodes db
-  r_nodes_db.set(str(NODE_ID), 1, ex=30)
-
-  # Re-run the loop
-  time.sleep(10)
-  loop_ping()
 
 # Setup
 def setup():
@@ -510,9 +504,6 @@ if __name__ == '__main__':
   # Setup
   setup()
 
-  # Start the two loops threads and kill them if the main thread is killed
-  loop_run_thread = threading.Thread(target=loop_run)
-  loop_ping_thread = threading.Thread(target=loop_ping)
-  loop_run_thread.start()
-  loop_ping_thread.start()
+  # Run
+  loop_run()
 
