@@ -240,6 +240,8 @@ def execute_check(inference):
   check_data = []
   check_result = True
 
+  # outputs = model(input_ids=input_ids) # NEW
+
   for step in range(MAX_NEW_TOKENS):
     print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
 
@@ -321,6 +323,7 @@ def execute_check(inference):
     # Append the chosen token
     next_token_id = torch.tensor([[current_token_id]]).to(device)
     input_ids = torch.cat([input_ids, next_token_id], dim=-1)
+    # outputs.logits = torch.cat([outputs.logits, next_token_id], dim=-1) # NEW
 
     # Append the check result
     check_data.append({
@@ -339,7 +342,6 @@ def execute_check(inference):
     "executed_by": inference["executed_by"],
     "executed_in": inference["executed_in"]
   }
-  print(result)
   return json.dumps(result)
 
 completed = {}
@@ -422,6 +424,7 @@ def run():
             check_result = execute_check(inference)
             r_checks_db.set(check_key, check_result)
             check_runned_one = True
+            print("Executing check completed: " + str(check_key))
           else:
             print("Remaining op check: " + str(remaining))
             remaining += 1
@@ -515,7 +518,7 @@ if __name__ == '__main__':
   setup()
 
   # Run
-  while True:
-    run()
-    time.sleep(1)
+  # while True:
+  run()
+  time.sleep(1)
 
