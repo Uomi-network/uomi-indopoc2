@@ -293,16 +293,16 @@ def execute_check(inference):
     time_start = time.time()
     for idx in top_indices[0]:
       index += 1
-      token_str = tokenizer.decode([idx.item()])
+      idx_item = idx.item()
+      token_str = tokenizer.decode([idx_item])
       prob = probs[0, idx].item()
       check_data_top_k.append({
         "str": token_str,
         "prob": prob,
-        "id": idx.item()
+        "id": idx_item
       })
       if idx == current_token_id and index <= TOK_K_CHECK:
         current_token_prob = float(prob)
-        break
     print(f"-- time for top-k loop: {time.time() - time_start}")
     if current_token_prob is None:
       check_result = False
@@ -335,13 +335,13 @@ def execute_check(inference):
   result = {
     "key": inference["key"],
     "check_result": check_result,
-    "check_experiment_version": 1,
     "check_data": check_data,
     "checked_by": NODE_ID,
     "checked_in": time.time() - time_start,
     "executed_by": inference["executed_by"],
     "executed_in": inference["executed_in"]
   }
+  print(result)
   return json.dumps(result)
 
 completed = {}
@@ -422,7 +422,7 @@ def run():
             print("Executing check: " + str(check_key))
             inference = node_inferences_db.get(key).decode('utf-8')
             check_result = execute_check(inference)
-            r_checks_db.set(check_key, check_result)
+            # r_checks_db.set(check_key, check_result)
             check_runned_one = True
           else:
             print("Remaining op check: " + str(remaining))
