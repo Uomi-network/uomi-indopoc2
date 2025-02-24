@@ -309,7 +309,8 @@ def execute_check(inference):
     "checked_by": NODE_ID,
     "checked_in": time.time() - time_start,
     "executed_by": inference["executed_by"],
-    "executed_in": inference["executed_in"]
+    "executed_in": inference["executed_in"],
+    "TEMP": 1
   }
   return json.dumps(result)
 
