@@ -288,7 +288,7 @@ def execute_check(inference):
 
     # Append the check result
     check_data.append({
-      "str": current_token_str,
+      # "str": current_token_str,
       "prob": current_token_prob,
       "id": current_token_id,
       "top_k": check_data_top_k
