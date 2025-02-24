@@ -77,7 +77,7 @@ print(f"Device: {device}")
 if not SIMULATION_MODE:
   model_name = "casperhansen/mistral-small-24b-instruct-2501-awq"
   tokenizer = AutoTokenizer.from_pretrained(model_name)
-  model = AutoModelForCausalLM.from_pretrained(model_name)
+  model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=True)
   model.to(device)
   model.eval()  # put model in eval mode (no dropout, etc.)
 
@@ -220,13 +220,11 @@ def execute_check(inference):
   check_data = []
   check_result = True
 
-  outputs = model(input_ids=input_ids) # NEW
-
   for step in range(MAX_NEW_TOKENS):
     print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
 
     # Forward pass to get raw logits
-    # outputs = model(input_ids=input_ids)
+    outputs = model(input_ids=input_ids)
     next_token_logits = outputs.logits[:, -1, :]
 
     # Apply temperature (if not 1.0)
@@ -260,7 +258,7 @@ def execute_check(inference):
     current_token_id = inference["output_tokens"][step]
     current_token_str = tokenizer.decode([current_token_id])
     top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
-    
+
     index = 0
     for idx in top_indices[0]:
       index += 1
@@ -291,8 +289,7 @@ def execute_check(inference):
 
     # Append the chosen token
     next_token_id = torch.tensor([[current_token_id]]).to(device)
-    # input_ids = torch.cat([input_ids, next_token_id], dim=-1)
-    outputs.logits = torch.cat([outputs.logits, next_token_id], dim=-1) # NEW
+    input_ids = torch.cat([input_ids, next_token_id], dim=-1)
 
     # Append the check result
     check_data.append({
@@ -309,8 +306,7 @@ def execute_check(inference):
     "checked_by": NODE_ID,
     "checked_in": time.time() - time_start,
     "executed_by": inference["executed_by"],
-    "executed_in": inference["executed_in"],
-    "TEMP": 1
+    "executed_in": inference["executed_in"]
   }
   return json.dumps(result)
 
@@ -487,8 +483,10 @@ if __name__ == '__main__':
   # Setup
   setup()
 
-  # Run
-  # while True:
   run()
-  time.sleep(1)
+
+  # # Run
+  # while True:
+  #   run()
+  #   time.sleep(1)
 
