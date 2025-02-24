@@ -240,11 +240,6 @@ def execute_check(inference):
   check_data = []
   check_result = True
 
-  # BACKUP: using string
-  # inference_output_without_prompt = inference["output"].split(prompt)[-1]
-  # inference_output_tokens = tokenizer.tokenize(inference_output_without_prompt)
-  # inference_output = tokenizer.convert_tokens_to_ids(inference_output_tokens)
-
   for step in range(MAX_NEW_TOKENS):
     print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
 
@@ -279,7 +274,6 @@ def execute_check(inference):
     # Take the current token from the inference output and check it's probability on the model
     check_data_top_k = []
     current_token_prob = None
-    # current_token_id = inference_output[step] # BACKUP: using string
     # calculate step_without_prompt by removing the prompt from the inference_output_tokens
     current_token_id = inference["output_tokens"][step]
     current_token_str = tokenizer.decode([current_token_id])
@@ -296,6 +290,7 @@ def execute_check(inference):
     #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
     #   if idx == current_token_id and index <= TOK_K_CHECK:
     #     current_token_prob = float(prob.item())
+    time_start = time.time()
     for idx in top_indices[0]:
       index += 1
       token_str = tokenizer.decode([idx.item()])
@@ -307,6 +302,7 @@ def execute_check(inference):
       })
       if idx == current_token_id and index <= TOK_K_CHECK:
         current_token_prob = float(prob)
+    print(f"-- time for top-k loop: {time.time() - time_start}")
     if current_token_prob is None:
       check_result = False
       check_data.append({
