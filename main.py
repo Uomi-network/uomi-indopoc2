@@ -380,6 +380,8 @@ def run():
       else:
         print("Remaining op inference: " + str(remaining))
         remaining += 1
+        if remaining > 10:
+          break
 
     # Take list of other nodes from the r_nodes_db
     nodes = [node for node in NODES if node != int(NODE_ID)]
@@ -418,6 +420,8 @@ def run():
         else:
           print("Remaining op check: " + str(remaining))
           remaining += 1
+          if remaining > 10:
+            break
 
     # BACKUP: using multiple threads
     # # Run the inference and check on two different threads
