@@ -262,12 +262,11 @@ def execute_check(inference):
     index = 0
     for idx in top_indices[0]:
       index += 1
-      # token_str = tokenizer.decode([idx.item()])
-      # prob = probs[0, idx].item()
-      prob = 0
+      token_str = tokenizer.decode([idx.item()])
+      prob = probs[0, idx].item()
       check_data_top_k.append({
-        # "str": token_str,
-        # "prob": prob,
+        "str": token_str,
+        "prob": prob,
         "id": idx.item()
       })
       if idx == current_token_id and index <= TOK_K_CHECK:
@@ -282,11 +281,6 @@ def execute_check(inference):
       })
       print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
       break
-
-    # GREEDY selection instead of sampling
-    # This ensures full determinism.
-    selected_token_str = tokenizer.decode([current_token_id])
-    selected_token_prob = probs[0, current_token_id].item()
 
     # Append the chosen token
     next_token_id = torch.tensor([[current_token_id]]).to(device)
