@@ -386,6 +386,7 @@ def run():
         else:
           print("Remaining op inference: " + str(remaining))
           remaining += 1
+          break
       if not prompts_runned_one:
         completed[NODE_ID] = True
         print("✅ Node " + str(NODE_ID) + " completed the inferences.")
@@ -428,9 +429,12 @@ def run():
           else:
             print("Remaining op check: " + str(remaining))
             remaining += 1
+            break
         if not check_runned_one:
           completed[node] = True
           print("✅ Node " + str(node) + " completed the checks.")
+        if check_runned_one:
+          break
 
     # BACKUP: using multiple threads
     # # Run the inference and check on two different threads
