@@ -302,6 +302,7 @@ def execute_check(inference):
       })
       if idx == current_token_id and index <= TOK_K_CHECK:
         current_token_prob = float(prob)
+        break
     print(f"-- time for top-k loop: {time.time() - time_start}")
     if current_token_prob is None:
       check_result = False
@@ -334,6 +335,7 @@ def execute_check(inference):
   result = {
     "key": inference["key"],
     "check_result": check_result,
+    "check_experiment_version": 1,
     "check_data": check_data,
     "checked_by": NODE_ID,
     "checked_in": time.time() - time_start,
