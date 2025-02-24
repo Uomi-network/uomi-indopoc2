@@ -279,27 +279,27 @@ def execute_check(inference):
     current_token_str = tokenizer.decode([current_token_id])
     top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
     
-    time_start = time.time()
-    top_probs = top_probs[0]  # Remove batch dimension
-    top_indices = top_indices[0]  # Remove batch dimension
+    # time_start = time.time()
+    # top_probs = top_probs[0]  # Remove batch dimension
+    # top_indices = top_indices[0]  # Remove batch dimension
 
-    # Check if current token is in top-k (for determining check_result)
-    is_in_top_k = (top_indices[:TOK_K_CHECK] == current_token_id).any()
-    current_token_prob = float(probs[0, current_token_id].item()) if is_in_top_k else None
+    # # Check if current token is in top-k (for determining check_result)
+    # is_in_top_k = (top_indices[:TOK_K_CHECK] == current_token_id).any()
+    # current_token_prob = float(probs[0, current_token_id].item()) if is_in_top_k else None
 
-    # Always create the check_data_top_k list with top_k + 5 tokens
-    check_data_top_k = []
-    for i in range(len(top_indices)):
-      idx = top_indices[i].item()
-      prob = top_probs[i].item()
-      # Only decode tokens once - this is expensive
-      token_str = tokenizer.decode([idx])
-      check_data_top_k.append({
-        "str": token_str,
-        "prob": prob,
-        "id": idx
-      })
-    print(f"-- time for top-k NEW loop: {time.time() - time_start}")
+    # # Always create the check_data_top_k list with top_k + 5 tokens
+    # check_data_top_k = []
+    # for i in range(len(top_indices)):
+    #   idx = top_indices[i].item()
+    #   prob = top_probs[i].item()
+    #   # Only decode tokens once - this is expensive
+    #   token_str = tokenizer.decode([idx])
+    #   check_data_top_k.append({
+    #     "str": token_str,
+    #     "prob": prob,
+    #     "id": idx
+    #   })
+    # print(f"-- time for top-k NEW loop: {time.time() - time_start}")
 
     time_start = time.time()
     index = 0
