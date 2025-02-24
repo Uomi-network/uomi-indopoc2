@@ -264,6 +264,7 @@ def execute_check(inference):
       index += 1
       # token_str = tokenizer.decode([idx.item()])
       # prob = probs[0, idx].item()
+      prob = 0
       check_data_top_k.append({
         # "str": token_str,
         # "prob": prob,
