@@ -255,40 +255,40 @@ def execute_check(inference):
     # Convert to probabilities
     probs = F.softmax(next_token_logits, dim=-1)  # shape: [1, vocab_size]
 
-    # Take the current token from the inference output and check it's probability on the model
-    ts = time.time()
-    check_data_top_k = []
-    current_token_prob = None
-    # calculate step_without_prompt by removing the prompt from the inference_output_tokens
+    # # Take the current token from the inference output and check it's probability on the model
+    # ts = time.time()
+    # check_data_top_k = []
+    # current_token_prob = None
+    # # calculate step_without_prompt by removing the prompt from the inference_output_tokens
     current_token_id = inference["output_tokens"][step]
-    current_token_str = tokenizer.decode([current_token_id])
-    top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
-    print(f"- time for top_k: {time.time() - ts}")
+    # current_token_str = tokenizer.decode([current_token_id])
+    # top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
+    # print(f"- time for top_k: {time.time() - ts}")
 
-    ts = time.time()
-    index = 0
-    for idx in top_indices[0]:
-      index += 1
-      token_str = tokenizer.decode([idx.item()])
-      prob = probs[0, idx].item()
-      check_data_top_k.append({
-        "str": token_str,
-        "prob": prob,
-        "id": idx.item()
-      })
-      if idx == current_token_id and index <= TOK_K_CHECK:
-        current_token_prob = float(prob)
-    if current_token_prob is None:
-      check_result = False
-      check_data.append({
-        "str": current_token_str,
-        "prob": current_token_prob,
-        "id": current_token_id,
-        "top_k": check_data_top_k
-      })
-      print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
-      break
-    print(f"- time for check_data_top_k: {time.time() - ts}")
+    # ts = time.time()
+    # index = 0
+    # for idx in top_indices[0]:
+    #   index += 1
+    #   token_str = tokenizer.decode([idx.item()])
+    #   prob = probs[0, idx].item()
+    #   check_data_top_k.append({
+    #     "str": token_str,
+    #     "prob": prob,
+    #     "id": idx.item()
+    #   })
+    #   if idx == current_token_id and index <= TOK_K_CHECK:
+    #     current_token_prob = float(prob)
+    # if current_token_prob is None:
+    #   check_result = False
+    #   check_data.append({
+    #     "str": current_token_str,
+    #     "prob": current_token_prob,
+    #     "id": current_token_id,
+    #     "top_k": check_data_top_k
+    #   })
+    #   print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
+    #   break
+    # print(f"- time for check_data_top_k: {time.time() - ts}")
 
     # Append the chosen token
     ts = time.time()
@@ -298,10 +298,10 @@ def execute_check(inference):
 
     # Append the check result
     check_data.append({
-      "str": current_token_str,
-      "prob": current_token_prob,
+      # "str": current_token_str,
+      # "prob": current_token_prob,
       "id": current_token_id,
-      "top_k": check_data_top_k
+      # "top_k": check_data_top_k
     })
 
   result = {
