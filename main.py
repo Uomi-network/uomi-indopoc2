@@ -224,12 +224,16 @@ def execute_check(inference):
     print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
 
     # Forward pass to get raw logits
+    ts = time.time()
     outputs = model(input_ids=input_ids)
     next_token_logits = outputs.logits[:, -1, :]
+    print(f"- time for forward pass: {time.time() - ts}")
 
     # Apply temperature (if not 1.0)
+    ts = time.time()
     if TEMPERATURE != 1.0:
       next_token_logits = next_token_logits / TEMPERATURE
+    print(f"- time for temperature: {time.time() - ts}")
     
     # Optional top-p filtering (here, top_p=1.0 => no filtering)
     if TOP_P < 1.0:
@@ -252,13 +256,16 @@ def execute_check(inference):
     probs = F.softmax(next_token_logits, dim=-1)  # shape: [1, vocab_size]
 
     # Take the current token from the inference output and check it's probability on the model
+    ts = time.time()
     check_data_top_k = []
     current_token_prob = None
     # calculate step_without_prompt by removing the prompt from the inference_output_tokens
     current_token_id = inference["output_tokens"][step]
     current_token_str = tokenizer.decode([current_token_id])
     top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
+    print(f"- time for top_k: {time.time() - ts}")
 
+    ts = time.time()
     index = 0
     for idx in top_indices[0]:
       index += 1
@@ -281,10 +288,13 @@ def execute_check(inference):
       })
       print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
       break
+    print(f"- time for check_data_top_k: {time.time() - ts}")
 
     # Append the chosen token
+    ts = time.time()
     next_token_id = torch.tensor([[current_token_id]]).to(device)
     input_ids = torch.cat([input_ids, next_token_id], dim=-1)
+    print(f"- time for update input_ids: {time.time() - ts}")
 
     # Append the check result
     check_data.append({
