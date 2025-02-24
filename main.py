@@ -346,7 +346,7 @@ def execute_check(inference):
   }
   return json.dumps(result)
 
-def loop_run():
+def run():
   print("🧠 Node " + str(NODE_ID) + " is looping run...")
   
   try:
@@ -452,9 +452,6 @@ def loop_run():
     print(traceback.format_exc())
     r_completition_db.set(str(NODE_ID), -1)
 
-  # Re-run the loop
-  time.sleep(1)
-  loop_run()
 
 # Setup
 def setup():
@@ -505,5 +502,7 @@ if __name__ == '__main__':
   setup()
 
   # Run
-  loop_run()
+  while True:
+    run()
+    time.sleep(1)
 

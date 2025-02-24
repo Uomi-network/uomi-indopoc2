@@ -78,11 +78,16 @@ def recap():
   total_check_fail = 0
   for key in os.listdir(f'{SNAPSHOT_FOLDER}/db_13'):
     with open(f'{SNAPSHOT_FOLDER}/db_13/{key}', 'r') as f:
-      f_json = json.loads(f.read())
-      if f_json['check_result']:
-        total_check_pass += 1
-      else:
-        print(f'❌ Check failed: {f_json["key"]}')
+      try:
+        f_json = json.loads(f.read())
+        if f_json['check_result']:
+          total_check_pass += 1
+        else:
+          print(f'❌ Check failed: {f_json["key"]}')
+          total_check_fail += 1
+      except: # probably the file is corrupted, delete it
+        os.remove(f'{SNAPSHOT_FOLDER}/db_13/{key}')
+        print(f'❌ Error reading check: {key}')
         total_check_fail += 1
   print(f'- Total checks passed: {total_check_pass}')
   print(f'- Total checks failed: {total_check_fail}')
@@ -103,9 +108,8 @@ def recap():
 
 if __name__ == '__main__':
   max_check_diff = 0
-  last_db_keys = snapshot()
+  last_db_keys = None
   last_db_time = int(time.time())
-  time.sleep(30)
 
   while True:
     print(' ')
@@ -113,7 +117,7 @@ if __name__ == '__main__':
     print(' ')
     recap()
     print(' ')
-    checks_diff = db_keys[REDIS_CHECKS_DB] - last_db_keys[REDIS_CHECKS_DB]
+    checks_diff = db_keys[REDIS_CHECKS_DB] - last_db_keys[REDIS_CHECKS_DB] if last_db_keys else 0
     time_diff = int(time.time()) - last_db_time
     print(f'📈 Checks diff: {checks_diff} ({checks_diff/time_diff} checks/sec)')
     max_check_diff = max(max_check_diff, checks_diff)
