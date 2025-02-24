@@ -79,7 +79,7 @@ if not SIMULATION_MODE:
   tokenizer = AutoTokenizer.from_pretrained(model_name)
   model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=True)
   model.to(device)
-  # model.eval()  # put model in eval mode (no dropout, etc.)
+  model.eval()  # put model in eval mode (no dropout, etc.)
 
 # Functions
 ############################################
@@ -221,10 +221,10 @@ def execute_check(inference):
   check_result = True
 
   for step in range(MAX_NEW_TOKENS):
-    print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
+    print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}", device)
 
     # Forward pass to get raw logits
-    outputs = model(input_ids=input_ids)
+    outputs = model(input_ids=input_ids).to(device)
     next_token_logits = outputs.logits[:, -1, :]
 
     # Apply temperature (if not 1.0)
