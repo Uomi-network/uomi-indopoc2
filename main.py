@@ -221,7 +221,7 @@ def execute_check(inference):
   check_result = True
 
   for step in range(MAX_NEW_TOKENS):
-    print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
+    # print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
 
     # Forward pass to get raw logits
     outputs = model(input_ids=input_ids)
