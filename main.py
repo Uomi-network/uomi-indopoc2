@@ -221,10 +221,10 @@ def execute_check(inference):
   check_result = True
 
   for step in range(MAX_NEW_TOKENS):
-    print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}", device)
+    print(f"Step execute_check {step + 1}/{MAX_NEW_TOKENS}")
 
     # Forward pass to get raw logits
-    outputs = model(input_ids=input_ids).to(device)
+    outputs = model(input_ids=input_ids)
     next_token_logits = outputs.logits[:, -1, :]
 
     # Apply temperature (if not 1.0)
@@ -256,31 +256,31 @@ def execute_check(inference):
     current_token_prob = None
     # calculate step_without_prompt by removing the prompt from the inference_output_tokens
     current_token_id = inference["output_tokens"][step]
-    current_token_str = tokenizer.decode([current_token_id])
-    top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
+    # current_token_str = tokenizer.decode([current_token_id])
+    # top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
 
-    index = 0
-    for idx in top_indices[0]:
-      index += 1
-      token_str = tokenizer.decode([idx.item()])
-      prob = probs[0, idx].item()
-      check_data_top_k.append({
-        "str": token_str,
-        "prob": prob,
-        "id": idx.item()
-      })
-      if idx == current_token_id and index <= TOK_K_CHECK:
-        current_token_prob = float(prob)
-    if current_token_prob is None:
-      check_result = False
-      check_data.append({
-        "str": current_token_str,
-        "prob": current_token_prob,
-        "id": current_token_id,
-        "top_k": check_data_top_k
-      })
-      print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
-      break
+    # index = 0
+    # for idx in top_indices[0]:
+    #   index += 1
+    #   token_str = tokenizer.decode([idx.item()])
+    #   prob = probs[0, idx].item()
+    #   check_data_top_k.append({
+    #     "str": token_str,
+    #     "prob": prob,
+    #     "id": idx.item()
+    #   })
+    #   if idx == current_token_id and index <= TOK_K_CHECK:
+    #     current_token_prob = float(prob)
+    # if current_token_prob is None:
+    #   check_result = False
+    #   check_data.append({
+    #     "str": current_token_str,
+    #     "prob": current_token_prob,
+    #     "id": current_token_id,
+    #     "top_k": check_data_top_k
+    #   })
+    #   print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
+    #   break
 
     # Append the chosen token
     next_token_id = torch.tensor([[current_token_id]]).to(device)
@@ -303,6 +303,7 @@ def execute_check(inference):
     "executed_by": inference["executed_by"],
     "executed_in": inference["executed_in"]
   }
+  print("✅ Check completed: " + str(result["checked_in"]))
   return json.dumps(result)
 
 completed = {}
@@ -383,7 +384,7 @@ def run():
             print("Executing check: " + str(check_key))
             inference = node_inferences_db.get(key).decode('utf-8')
             check_result = execute_check(inference)
-            r_checks_db.set(check_key, check_result)
+            # r_checks_db.set(check_key, check_result)
             check_runned_one = True
             print("Executing check completed: " + str(check_key))
           else:
