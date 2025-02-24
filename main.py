@@ -279,6 +279,7 @@ def execute_check(inference):
     current_token_str = tokenizer.decode([current_token_id])
     top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
     
+    time_start = time.time()
     top_probs = top_probs[0]  # Remove batch dimension
     top_indices = top_indices[0]  # Remove batch dimension
 
@@ -298,32 +299,34 @@ def execute_check(inference):
         "prob": prob,
         "id": idx
       })
+    print(f"-- time for top-k NEW loop: {time.time() - time_start}")
 
-    # index = 0
-    # # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
-    # #   index += 1
-    # #   token_str = tokenizer.decode([idx.item()])
-    # #   check_data_top_k.append({
-    # #     "str": token_str,
-    # #     "prob": prob.item(),
-    # #     "id": idx.item()
-    # #   })
-    # #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
-    # #   if idx == current_token_id and index <= TOK_K_CHECK:
-    # #     current_token_prob = float(prob.item())
-    # time_start = time.time()
-    # for idx in top_indices[0]:
+    time_start = time.time()
+    index = 0
+    # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
     #   index += 1
     #   token_str = tokenizer.decode([idx.item()])
-    #   prob = probs[0, idx].item()
     #   check_data_top_k.append({
     #     "str": token_str,
-    #     "prob": prob,
+    #     "prob": prob.item(),
     #     "id": idx.item()
     #   })
+    #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
     #   if idx == current_token_id and index <= TOK_K_CHECK:
-    #     current_token_prob = float(prob)
-    # print(f"-- time for top-k loop: {time.time() - time_start}")
+    #     current_token_prob = float(prob.item())
+    for idx in top_indices[0]:
+      index += 1
+      token_str = tokenizer.decode([idx.item()])
+      prob = probs[0, idx].item()
+      check_data_top_k.append({
+        "str": token_str,
+        "prob": prob,
+        "id": idx.item()
+      })
+      if idx == current_token_id and index <= TOK_K_CHECK:
+        current_token_prob = float(prob)
+    print(f"-- time for top-k OLD loop: {time.time() - time_start}")
+
     if current_token_prob is None:
       check_result = False
       check_data.append({
