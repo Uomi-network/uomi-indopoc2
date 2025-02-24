@@ -347,6 +347,9 @@ def execute_check(inference):
   return json.dumps(result)
 
 completed = {}
+for node in NODES:
+  completed[node] = False
+completed[NODE_ID] = False
 def run():
   global completed
   print("🧠 Node " + str(NODE_ID) + " is looping run...")
