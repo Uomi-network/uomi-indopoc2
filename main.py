@@ -279,49 +279,49 @@ def execute_check(inference):
     current_token_str = tokenizer.decode([current_token_id])
     top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
     
-    # top_probs = top_probs[0]  # Remove batch dimension
-    # top_indices = top_indices[0]  # Remove batch dimension
+    top_probs = top_probs[0]  # Remove batch dimension
+    top_indices = top_indices[0]  # Remove batch dimension
 
-    # # Check if current token is in top-k (for determining check_result)
-    # is_in_top_k = (top_indices[:TOK_K_CHECK] == current_token_id).any()
-    # current_token_prob = float(probs[0, current_token_id].item()) if is_in_top_k else None
+    # Check if current token is in top-k (for determining check_result)
+    is_in_top_k = (top_indices[:TOK_K_CHECK] == current_token_id).any()
+    current_token_prob = float(probs[0, current_token_id].item()) if is_in_top_k else None
 
-    # # Always create the check_data_top_k list with top_k + 5 tokens
-    # check_data_top_k = []
-    # for i in range(len(top_indices)):
-    #   idx = top_indices[i].item()
-    #   prob = top_probs[i].item()
-    #   # Only decode tokens once - this is expensive
-    #   token_str = tokenizer.decode([idx])
-    #   check_data_top_k.append({
-    #     "str": token_str,
-    #     "prob": prob,
-    #     "id": idx
-    #   })
-
-    index = 0
-    # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
-    #   index += 1
-    #   token_str = tokenizer.decode([idx.item()])
-    #   check_data_top_k.append({
-    #     "str": token_str,
-    #     "prob": prob.item(),
-    #     "id": idx.item()
-    #   })
-    #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
-    #   if idx == current_token_id and index <= TOK_K_CHECK:
-    #     current_token_prob = float(prob.item())
-    for idx in top_indices[0]:
-      index += 1
-      token_str = tokenizer.decode([idx.item()])
-      prob = probs[0, idx].item()
+    # Always create the check_data_top_k list with top_k + 5 tokens
+    check_data_top_k = []
+    for i in range(len(top_indices)):
+      idx = top_indices[i].item()
+      prob = top_probs[i].item()
+      # Only decode tokens once - this is expensive
+      token_str = tokenizer.decode([idx])
       check_data_top_k.append({
         "str": token_str,
         "prob": prob,
-        "id": idx.item()
+        "id": idx
       })
-      if idx == current_token_id and index <= TOK_K_CHECK:
-        current_token_prob = float(prob)
+
+    # index = 0
+    # # for rank, (prob, idx) in enumerate(zip(top_probs[0], top_indices[0]), start=1):
+    # #   index += 1
+    # #   token_str = tokenizer.decode([idx.item()])
+    # #   check_data_top_k.append({
+    # #     "str": token_str,
+    # #     "prob": prob.item(),
+    # #     "id": idx.item()
+    # #   })
+    # #   # print(f"   {rank}. '{token_str}' -> prob={prob.item():.6f}")
+    # #   if idx == current_token_id and index <= TOK_K_CHECK:
+    # #     current_token_prob = float(prob.item())
+    # for idx in top_indices[0]:
+    #   index += 1
+    #   token_str = tokenizer.decode([idx.item()])
+    #   prob = probs[0, idx].item()
+    #   check_data_top_k.append({
+    #     "str": token_str,
+    #     "prob": prob,
+    #     "id": idx.item()
+    #   })
+    #   if idx == current_token_id and index <= TOK_K_CHECK:
+    #     current_token_prob = float(prob)
 
     if current_token_prob is None:
       check_result = False
