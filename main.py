@@ -346,7 +346,9 @@ def execute_check(inference):
   }
   return json.dumps(result)
 
+completed = {}
 def run():
+  global completed
   print("🧠 Node " + str(NODE_ID) + " is looping run...")
   
   try:
@@ -357,31 +359,33 @@ def run():
     # Start execution of the inferences (from r_assignments_db) and store the result in the node's db
     # NOTE: Ignore execution if it is already stored in the node's db
     prompts_runned_one = False
-    r_assignments_db_keys = r_assignments_db.keys()
-    r_assignments_db_keys = [key.decode('utf-8') for key in r_assignments_db_keys]
-    r_assignments_db_keys_of_node = [key for key in r_assignments_db_keys if key.split("_")[0] == str(NODE_ID)]
-    r_assignments_db_keys_of_node = [key.split("_")[1] for key in r_assignments_db_keys_of_node]
-    r_node_inferences_db_keys = r_node_inferences_db.keys()
-    r_node_inferences_db_keys = [key.decode('utf-8') for key in r_node_inferences_db_keys]
-    for key in r_assignments_db_keys_of_node:
-      if r_node_inferences_db_keys.__contains__(key):
-        print("Skipping inference: " + str(key))
-      # BACKUP: using multiple threads
-      # elif not prompts_runned_one:
-      #   print("Executing inference: " + str(key))
-      #   inferences_to_run = (prompt, key)
-      #   prompts_runned_one = True
-      elif not prompts_runned_one:
-        print("Executing inference: " + str(key))
-        prompt = r_prompts_db.get(key).decode('utf-8')
-        result = execute_inference(prompt, key)
-        r_node_inferences_db.set(key, result)
-        prompts_runned_one = True
-      else:
-        print("Remaining op inference: " + str(remaining))
-        remaining += 1
-        if remaining > 10:
-          break
+    if not completed[NODE_ID]:
+      r_assignments_db_keys = r_assignments_db.keys()
+      r_assignments_db_keys = [key.decode('utf-8') for key in r_assignments_db_keys]
+      r_assignments_db_keys_of_node = [key for key in r_assignments_db_keys if key.split("_")[0] == str(NODE_ID)]
+      r_assignments_db_keys_of_node = [key.split("_")[1] for key in r_assignments_db_keys_of_node]
+      r_node_inferences_db_keys = r_node_inferences_db.keys()
+      r_node_inferences_db_keys = [key.decode('utf-8') for key in r_node_inferences_db_keys]
+      for key in r_assignments_db_keys_of_node:
+        if r_node_inferences_db_keys.__contains__(key):
+          print("Skipping inference: " + str(key))
+        # BACKUP: using multiple threads
+        # elif not prompts_runned_one:
+        #   print("Executing inference: " + str(key))
+        #   inferences_to_run = (prompt, key)
+        #   prompts_runned_one = True
+        elif not prompts_runned_one:
+          print("Executing inference: " + str(key))
+          prompt = r_prompts_db.get(key).decode('utf-8')
+          result = execute_inference(prompt, key)
+          r_node_inferences_db.set(key, result)
+          prompts_runned_one = True
+        else:
+          print("Remaining op inference: " + str(remaining))
+          remaining += 1
+      if not prompts_runned_one:
+        completed[NODE_ID] = True
+        print("✅ Node " + str(NODE_ID) + " completed the inferences.")
 
     # Take list of other nodes from the r_nodes_db
     nodes = [node for node in NODES if node != int(NODE_ID)]
@@ -391,37 +395,39 @@ def run():
     # Loop through the nodes, for each node take its inferences and execute the check
     check_runned_one = False
     for node in nodes:
-      print("Checking node: " + str(node))
-      # Try to connect to the node's db, if db not exists, skip the node
-      try:
-        node_inferences_db = r_node_inferences_db if node == NODE_ID else redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=node, password=REDIS_PASS)
-      except:
-        print("Skipping node: " + str(node))
-        continue
-      node_inferences_db_keys = node_inferences_db.keys()
-      r_checks_db_keys = r_checks_db.keys()
-      r_checks_db_keys = [key.decode('utf-8') for key in r_checks_db_keys]
-      for key in node_inferences_db_keys:
-        check_key = str(NODE_ID) + "_" + str(node) + "_" + key.decode('utf-8')
-        if r_checks_db_keys.__contains__(check_key):
-          print("Skipping check: " + str(check_key))
-        # BACKUP: using multiple threads
-        # elif not check_runned_one:
-        #   print("Executing check: " + str(check_key))
-        #   inference = node_inferences_db.get(key).decode('utf-8')
-        #   check_to_run = (inference, check_key)
-        #   check_runned_one = True
-        elif not check_runned_one:
-          print("Executing check: " + str(check_key))
-          inference = node_inferences_db.get(key).decode('utf-8')
-          check_result = execute_check(inference)
-          r_checks_db.set(check_key, check_result)
-          check_runned_one = True
-        else:
-          print("Remaining op check: " + str(remaining))
-          remaining += 1
-          if remaining > 10:
-            break
+      if not completed[node]:
+        print("Checking node: " + str(node))
+        # Try to connect to the node's db, if db not exists, skip the node
+        try:
+          node_inferences_db = r_node_inferences_db if node == NODE_ID else redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=node, password=REDIS_PASS)
+        except:
+          print("Skipping node: " + str(node))
+          continue
+        node_inferences_db_keys = node_inferences_db.keys()
+        r_checks_db_keys = r_checks_db.keys()
+        r_checks_db_keys = [key.decode('utf-8') for key in r_checks_db_keys]
+        for key in node_inferences_db_keys:
+          check_key = str(NODE_ID) + "_" + str(node) + "_" + key.decode('utf-8')
+          if r_checks_db_keys.__contains__(check_key):
+            print("Skipping check: " + str(check_key))
+          # BACKUP: using multiple threads
+          # elif not check_runned_one:
+          #   print("Executing check: " + str(check_key))
+          #   inference = node_inferences_db.get(key).decode('utf-8')
+          #   check_to_run = (inference, check_key)
+          #   check_runned_one = True
+          elif not check_runned_one:
+            print("Executing check: " + str(check_key))
+            inference = node_inferences_db.get(key).decode('utf-8')
+            check_result = execute_check(inference)
+            r_checks_db.set(check_key, check_result)
+            check_runned_one = True
+          else:
+            print("Remaining op check: " + str(remaining))
+            remaining += 1
+        if not check_runned_one:
+          completed[node] = True
+          print("✅ Node " + str(node) + " completed the checks.")
 
     # BACKUP: using multiple threads
     # # Run the inference and check on two different threads
