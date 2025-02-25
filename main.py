@@ -450,7 +450,7 @@ def run():
     r_completition_db.set(str(NODE_ID), remaining)
 
     # Update ping
-    r_nodes_db.set(str(NODE_ID), 1, ex=300)
+    r_nodes_db.set(str(NODE_ID), 1, ex=600)
 
     print("✅ Node " + str(NODE_ID) + " completed the run loop.")
   except Exception as e:
