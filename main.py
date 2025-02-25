@@ -459,7 +459,8 @@ def run():
       check_keys = [check[0] for check in batch_checks]
       inferences = [check[1] for check in batch_checks]
       results = execute_batch_checks(inferences)
-      print(results)
+      for key, result in zip(check_keys, results):
+        r_checks_db.set(key, result)
 
     # Store the node's db in the completition db
     r_completition_db.set(str(NODE_ID), remaining)
@@ -523,7 +524,7 @@ if __name__ == '__main__':
   setup()
 
   # Run
-  # while True:
-  run()
-  time.sleep(1)
+  while True:
+    run()
+    time.sleep(1)
 
