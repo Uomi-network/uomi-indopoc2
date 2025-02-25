@@ -413,7 +413,6 @@ def run():
         else:
           print("Remaining op inference: " + str(remaining))
           remaining += 1
-          break
       if not prompts_runned_one:
         completed[NODE_ID] = True
         print("✅ Node " + str(NODE_ID) + " completed the inferences.")
@@ -448,7 +447,6 @@ def run():
           else:
             print("Remaining op check: " + str(remaining))
             remaining += 1
-            break
         if len(batch_checks) == 0:
           completed[node] = True
           print("✅ Node " + str(node) + " completed the checks.")
