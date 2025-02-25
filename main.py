@@ -184,7 +184,7 @@ def execute_inference(prompt, key):
   }
   return json.dumps(result)
 
-def execute_and_store_batch_checks(batch_checks):
+def execute_batch_checks(batch_checks):
   """
   Execute and store checks for a batch of inferences using true batch processing.
   
