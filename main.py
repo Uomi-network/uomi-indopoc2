@@ -475,7 +475,7 @@ if __name__ == '__main__':
   setup()
 
   # Run
-  while True:
-    run()
-    time.sleep(1)
+  # while True:
+  run()
+  time.sleep(1)
 
