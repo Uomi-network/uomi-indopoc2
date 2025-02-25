@@ -394,7 +394,7 @@ def run():
           if r_checks_db_keys.__contains__(check_key):
             print("Skipping check: " + str(check_key))
           elif len(batch_checks) < BACK_SIZE_CHECK:
-            print("Storing check: " + str(check_key))
+            print("Taking check: " + str(check_key))
             inference = node_inferences_db.get(key).decode('utf-8')
             batch_checks.append((check_key, inference))
           else:
@@ -407,10 +407,11 @@ def run():
         if len(batch_checks) >= BACK_SIZE_CHECK:
           break
     if len(batch_checks) > 0:
+      print("Executing checks: " + str(len(batch_checks)))
       check_keys = [check[0] for check in batch_checks]
       inferences = [check[1] for check in batch_checks]
       results = execute_batch_checks(inferences)
-      print("Storing checks: " + str(check_keys))
+      print(results)
 
     # Store the node's db in the completition db
     r_completition_db.set(str(NODE_ID), remaining)
