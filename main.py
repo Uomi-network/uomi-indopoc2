@@ -184,9 +184,9 @@ def execute_inference(prompt, key):
   }
   return json.dumps(result)
 
-def execute_batch_checks(batch_checks):
+def execute_and_store_batch_checks(batch_checks):
   """
-  Execute and store checks for a batch of inferences.
+  Execute and store checks for a batch of inferences using true batch processing.
   
   Args:
       batch_checks: A list of inference data to check in batch
@@ -198,49 +198,75 @@ def execute_batch_checks(batch_checks):
   
   # Parse all inferences from the batch
   inferences = [json.loads(inference) for inference in batch_checks]
+  batch_size = len(inferences)
   
   # Get prompts for all inferences
   prompts = [r_prompts_db.get(inference["key"]).decode('utf-8') for inference in inferences]
   
   # Prepare batch data structures
-  batch_size = len(inferences)
   all_input_ids = [tokenizer.encode(prompt, return_tensors="pt").to(device) for prompt in prompts]
+  max_prompt_length = max(ids.shape[1] for ids in all_input_ids)
+  
+  # Pad all input_ids to the same length
+  padded_input_ids = []
+  attention_masks = []
+  for input_ids in all_input_ids:
+    padding_length = max_prompt_length - input_ids.shape[1]
+    padded = torch.cat([input_ids, torch.zeros((1, padding_length), dtype=torch.long, device=device)], dim=1)
+    mask = torch.cat([torch.ones((1, input_ids.shape[1]), device=device), 
+                     torch.zeros((1, padding_length), device=device)], dim=1)
+    padded_input_ids.append(padded)
+    attention_masks.append(mask)
+  
+  # Create batch tensors
+  batched_input_ids = torch.cat(padded_input_ids, dim=0)
+  batched_attention_masks = torch.cat(attention_masks, dim=0)
+  
   all_check_data = [[] for _ in range(batch_size)]
   all_check_results = [True for _ in range(batch_size)]
-  active_indices = list(range(batch_size))  # Indices of inferences still being processed
+  active_indices = list(range(batch_size))
+  
+  # Track the current position for each sequence
+  current_positions = [max_prompt_length] * batch_size
+  
+  # Create position mapping to account for padding
+  position_mappings = []
+  for i, input_ids in enumerate(all_input_ids):
+    position_mappings.append(input_ids.shape[1])
+  
+  # Maximum number of tokens to check across all inferences
+  max_tokens = max(len(inference["output_tokens"]) for inference in inferences)
+  max_tokens = min(max_tokens, MAX_NEW_TOKENS)
   
   # Iterate through token positions
-  for step in range(MAX_NEW_TOKENS):
-    print(f"Step execute_batch_check {step + 1}/{MAX_NEW_TOKENS}, active inferences: {len(active_indices)}/{batch_size}")
+  for step in range(max_tokens):
+    print(f"Step execute_batch_check {step + 1}/{max_tokens}, active inferences: {len(active_indices)}/{batch_size}")
     
     if not active_indices:
       break  # All inferences have completed or failed checks
     
-    # Process each active inference
-    for batch_idx in active_indices[:]:  # Create a copy to allow removal during iteration
-      input_ids = all_input_ids[batch_idx]
-      inference = inferences[batch_idx]
-      
-      # Check if we've reached the end of this inference's tokens
-      if step >= len(inference["output_tokens"]):
-        active_indices.remove(batch_idx)
-        continue
-      
-      # Forward pass to get raw logits
+    # Filter only active sequences for this batch forward pass
+    active_input_ids = batched_input_ids[active_indices]
+    active_attention_masks = batched_attention_masks[active_indices]
+    
+    # Forward pass for all active sequences in a single batch
+    ts = time.time()
+    outputs = model(input_ids=active_input_ids, attention_mask=active_attention_masks)
+    next_token_logits = outputs.logits[:, -1, :]  # Take the last token prediction for each sequence
+    print(f"- time for forward pass (batch of {len(active_indices)}): {time.time() - ts}")
+    
+    # Apply temperature (if not 1.0)
+    ts = time.time()
+    if TEMPERATURE != 1.0:
+      next_token_logits = next_token_logits / TEMPERATURE
+    print(f"- time for temperature: {time.time() - ts}")
+    
+    # Optional top-p filtering (applied to all sequences in batch)
+    if TOP_P < 1.0:
       ts = time.time()
-      outputs = model(input_ids=input_ids)
-      next_token_logits = outputs.logits[:, -1, :]
-      print(f"- time for forward pass (inference {batch_idx}): {time.time() - ts}")
-      
-      # Apply temperature (if not 1.0)
-      ts = time.time()
-      if TEMPERATURE != 1.0:
-        next_token_logits = next_token_logits / TEMPERATURE
-      print(f"- time for temperature (inference {batch_idx}): {time.time() - ts}")
-      
-      # Optional top-p filtering
-      if TOP_P < 1.0:
-        sorted_logits, sorted_indices = torch.sort(next_token_logits, descending=True, dim=-1)
+      # Apply top-p filtering on each sequence in the batch
+      for i in range(len(active_indices)):
+        sorted_logits, sorted_indices = torch.sort(next_token_logits[i].unsqueeze(0), descending=True, dim=-1)
         sorted_logits_1d = sorted_logits[0]
         sorted_indices_1d = sorted_indices[0]
         
@@ -252,27 +278,42 @@ def execute_batch_checks(batch_checks):
         sorted_logits_1d[cutoff_idx + 1:] = float('-inf')
         
         # Scatter back
-        next_token_logits = torch.full_like(next_token_logits, float('-inf'))
-        next_token_logits[0].scatter_(0, sorted_indices_1d, sorted_logits_1d)
+        next_token_logits[i] = torch.full_like(next_token_logits[i], float('-inf'))
+        next_token_logits[i].scatter_(0, sorted_indices_1d, sorted_logits_1d)
+      print(f"- time for top-p: {time.time() - ts}")
+    
+    # Convert to probabilities
+    probs = F.softmax(next_token_logits, dim=-1)  # shape: [batch_size, vocab_size]
+    
+    # Process each active inference
+    to_remove = []
+    for batch_idx, original_idx in enumerate(active_indices):
+      inference = inferences[original_idx]
       
-      # Convert to probabilities
-      probs = F.softmax(next_token_logits, dim=-1)  # shape: [1, vocab_size]
+      # Check if we've reached the end of this inference's tokens
+      if step >= len(inference["output_tokens"]):
+        to_remove.append(batch_idx)
+        continue
       
-      # Check the current token's probability
+      # Get the current token for this inference
+      current_token_id = inference["output_tokens"][step]
+      current_token_str = tokenizer.decode([current_token_id])
+      
+      # Get top-k tokens
+      ts = time.time()
+      top_probs, top_indices = probs[batch_idx].topk(TOK_K_CHECK + 5)
+      print(f"- time for top_k (inference {original_idx}): {time.time() - ts}")
+      
+      # Check if current token is in top-k
       ts = time.time()
       check_data_top_k = []
       current_token_prob = None
-      current_token_id = inference["output_tokens"][step]
-      current_token_str = tokenizer.decode([current_token_id])
-      top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
-      print(f"- time for top_k (inference {batch_idx}): {time.time() - ts}")
       
-      ts = time.time()
       index = 0
-      for idx in top_indices[0]:
+      for idx, prob_val in zip(top_indices, top_probs):
         index += 1
         token_str = tokenizer.decode([idx.item()])
-        prob = probs[0, idx].item()
+        prob = prob_val.item()
         check_data_top_k.append({
           "str": token_str,
           "prob": prob,
@@ -281,34 +322,39 @@ def execute_batch_checks(batch_checks):
         if idx == current_token_id and index <= TOK_K_CHECK:
           current_token_prob = float(prob)
       
+      print(f"- time for check_data_top_k (inference {original_idx}): {time.time() - ts}")
+      
       # Record the check data
       if current_token_prob is None:
-        all_check_results[batch_idx] = False
-        all_check_data[batch_idx].append({
+        all_check_results[original_idx] = False
+        all_check_data[original_idx].append({
           "str": current_token_str,
           "prob": current_token_prob,
           "id": current_token_id,
           "top_k": check_data_top_k
         })
-        print(f"❌ Inference {batch_idx} - Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
-        active_indices.remove(batch_idx)  # Stop processing this inference
+        print(f"❌ Inference {original_idx} - Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
+        to_remove.append(batch_idx)
         continue
       
-      print(f"- time for check_data_top_k (inference {batch_idx}): {time.time() - ts}")
-      
-      # Append the chosen token to the input_ids for next iteration
-      ts = time.time()
-      next_token_id = torch.tensor([[current_token_id]]).to(device)
-      all_input_ids[batch_idx] = torch.cat([input_ids, next_token_id], dim=-1)
-      print(f"- time for update input_ids (inference {batch_idx}): {time.time() - ts}")
-      
       # Append the check result
-      all_check_data[batch_idx].append({
+      all_check_data[original_idx].append({
         "str": current_token_str,
         "prob": current_token_prob,
         "id": current_token_id,
         "top_k": check_data_top_k
       })
+      
+      # Update input_ids for next iteration
+      ts = time.time()
+      batched_input_ids[original_idx, current_positions[original_idx]] = current_token_id
+      batched_attention_masks[original_idx, current_positions[original_idx]] = 1
+      current_positions[original_idx] += 1
+      print(f"- time for update input_ids (inference {original_idx}): {time.time() - ts}")
+    
+    # Remove completed or failed inferences from active list
+    for idx in sorted(to_remove, reverse=True):
+      del active_indices[idx]
   
   # Prepare the final results
   total_time = time.time() - time_start
@@ -320,7 +366,7 @@ def execute_batch_checks(batch_checks):
       "check_result": all_check_results[i],
       "check_data": all_check_data[i],
       "checked_by": NODE_ID,
-      "checked_in": total_time,  # Using the total batch time for simplicity
+      "checked_in": total_time,  # Using the total batch time
       "executed_by": inference["executed_by"],
       "executed_in": inference["executed_in"]
     }
