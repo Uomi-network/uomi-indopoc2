@@ -255,40 +255,40 @@ def execute_check(inference):
     # Convert to probabilities
     probs = F.softmax(next_token_logits, dim=-1)  # shape: [1, vocab_size]
 
-    # # Take the current token from the inference output and check it's probability on the model
-    # ts = time.time()
-    # check_data_top_k = []
-    # current_token_prob = None
-    # # calculate step_without_prompt by removing the prompt from the inference_output_tokens
+    # Take the current token from the inference output and check it's probability on the model
+    ts = time.time()
+    check_data_top_k = []
+    current_token_prob = None
+    # calculate step_without_prompt by removing the prompt from the inference_output_tokens
     current_token_id = inference["output_tokens"][step]
-    # current_token_str = tokenizer.decode([current_token_id])
-    # top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
-    # print(f"- time for top_k: {time.time() - ts}")
+    current_token_str = tokenizer.decode([current_token_id])
+    top_probs, top_indices = probs.topk(TOK_K_CHECK + 5, dim=-1)
+    print(f"- time for top_k: {time.time() - ts}")
 
-    # ts = time.time()
-    # index = 0
-    # for idx in top_indices[0]:
-    #   index += 1
-    #   token_str = tokenizer.decode([idx.item()])
-    #   prob = probs[0, idx].item()
-    #   check_data_top_k.append({
-    #     "str": token_str,
-    #     "prob": prob,
-    #     "id": idx.item()
-    #   })
-    #   if idx == current_token_id and index <= TOK_K_CHECK:
-    #     current_token_prob = float(prob)
-    # if current_token_prob is None:
-    #   check_result = False
-    #   check_data.append({
-    #     "str": current_token_str,
-    #     "prob": current_token_prob,
-    #     "id": current_token_id,
-    #     "top_k": check_data_top_k
-    #   })
-    #   print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
-    #   break
-    # print(f"- time for check_data_top_k: {time.time() - ts}")
+    ts = time.time()
+    index = 0
+    for idx in top_indices[0]:
+      index += 1
+      token_str = tokenizer.decode([idx.item()])
+      prob = probs[0, idx].item()
+      check_data_top_k.append({
+        "str": token_str,
+        "prob": prob,
+        "id": idx.item()
+      })
+      if idx == current_token_id and index <= TOK_K_CHECK:
+        current_token_prob = float(prob)
+    if current_token_prob is None:
+      check_result = False
+      check_data.append({
+        "str": current_token_str,
+        "prob": current_token_prob,
+        "id": current_token_id,
+        "top_k": check_data_top_k
+      })
+      print(f"❌ Current token: '{current_token_str}' -> not found in top-{TOK_K_CHECK}")
+      break
+    print(f"- time for check_data_top_k: {time.time() - ts}")
 
     # Append the chosen token
     ts = time.time()
@@ -298,10 +298,10 @@ def execute_check(inference):
 
     # Append the check result
     check_data.append({
-      # "str": current_token_str,
-      # "prob": current_token_prob,
+      "str": current_token_str,
+      "prob": current_token_prob,
       "id": current_token_id,
-      # "top_k": check_data_top_k
+      "top_k": check_data_top_k
     })
 
   result = {
@@ -342,11 +342,6 @@ def run():
       for key in r_assignments_db_keys_of_node:
         if r_node_inferences_db_keys.__contains__(key):
           print("Skipping inference: " + str(key))
-        # BACKUP: using multiple threads
-        # elif not prompts_runned_one:
-        #   print("Executing inference: " + str(key))
-        #   inferences_to_run = (prompt, key)
-        #   prompts_runned_one = True
         elif not prompts_runned_one:
           print("Executing inference: " + str(key))
           prompt = r_prompts_db.get(key).decode('utf-8')
@@ -384,17 +379,11 @@ def run():
           check_key = str(NODE_ID) + "_" + str(node) + "_" + key.decode('utf-8')
           if r_checks_db_keys.__contains__(check_key):
             print("Skipping check: " + str(check_key))
-          # BACKUP: using multiple threads
-          # elif not check_runned_one:
-          #   print("Executing check: " + str(check_key))
-          #   inference = node_inferences_db.get(key).decode('utf-8')
-          #   check_to_run = (inference, check_key)
-          #   check_runned_one = True
           elif not check_runned_one:
             print("Executing check: " + str(check_key))
             inference = node_inferences_db.get(key).decode('utf-8')
             check_result = execute_check(inference)
-            # r_checks_db.set(check_key, check_result)
+            r_checks_db.set(check_key, check_result)
             check_runned_one = True
             print("Executing check completed: " + str(check_key))
           else:
@@ -406,27 +395,6 @@ def run():
           print("✅ Node " + str(node) + " completed the checks.")
         if check_runned_one:
           break
-
-    # BACKUP: using multiple threads
-    # # Run the inference and check on two different threads
-    # def run_inference(prompt, key):
-    #   print("🤖 Executing inference: " + str(key))
-    #   result = execute_inference(prompt, key)
-    #   r_node_inferences_db.set(key, result)
-    # def run_check(inference, key):
-    #   print("🤖 Executing check: " + str(key))
-    #   result = execute_check(inference)
-    #   r_checks_db.set(key, result)
-    # threads = []
-    # if inferences_to_run:
-    #   threads.append(threading.Thread(target=run_inference, args=inferences_to_run))
-    # if check_to_run:
-    #   threads.append(threading.Thread(target=run_check, args=check_to_run))
-    # for thread in threads:
-    #   thread.start()
-    # for thread in threads:
-    #   thread.join()
-    # print("🤖 Inference and check completed.")
 
     # Store the node's db in the completition db
     r_completition_db.set(str(NODE_ID), remaining)
@@ -489,10 +457,8 @@ if __name__ == '__main__':
   # Setup
   setup()
 
-  run()
-
-  # # Run
-  # while True:
-  #   run()
-  #   time.sleep(1)
+  # Run
+  while True:
+    run()
+    time.sleep(1)
 
