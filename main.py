@@ -287,7 +287,7 @@ def execute_batch_checks(batch_checks):
   max_prompt_length = max(prompt_lengths)
   
   # Set full_sequence_length as the maximum of inferences full_sequence_length
-  full_sequence_length = max(inference["full_sequence_length"] for inference in in inferences)
+  full_sequence_length = max(inference["full_sequence_length"] for inference in inferences)
   
   # Create padded input tensors with attention masks
   batched_input_ids = torch.zeros((batch_size, full_sequence_length), dtype=torch.long, device=device)
