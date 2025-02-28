@@ -239,7 +239,8 @@ def execute_batch_inferences(batch_prompts, batch_keys):
       "output_tokens": output_tokens,
       "execution_data": all_execution_data[i],
       "executed_by": NODE_ID,
-      "executed_in": time.time() - time_start
+      "executed_in": time.time() - time_start,
+      "full_sequence_length": full_sequence_length,
     }
     results.append(json.dumps(result))
     print(f"✅ Inference {i} completed")
@@ -285,9 +286,8 @@ def execute_batch_checks(batch_checks):
   prompt_lengths = [ids.shape[1] for ids in all_input_ids]
   max_prompt_length = max(prompt_lengths)
   
-  # Pre-allocate tensors with enough space for full sequence (prompt + all output tokens)
-  # Add extra padding to avoid index errors
-  full_sequence_length = max_prompt_length + max_output_tokens + 10  # Added safety margin
+  # Set full_sequence_length as the maximum of inferences full_sequence_length
+  full_sequence_length = max(inference["full_sequence_length"] for inference in in inferences)
   
   # Create padded input tensors with attention masks
   batched_input_ids = torch.zeros((batch_size, full_sequence_length), dtype=torch.long, device=device)
