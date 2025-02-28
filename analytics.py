@@ -39,6 +39,7 @@ def main():
   max_position_changed = 0
   max_execution_token_pos = 0
   max_check_token_pos = 0
+  alarm_checks = []
   for check in checks:
     check_data = get_check(check)
     execution_data = get_execution(check_data['key'], check_data['executed_by'])
@@ -79,6 +80,9 @@ def main():
         max_execution_token_pos = execution_token_pos
       if check_token_pos > max_check_token_pos:
         max_check_token_pos = check_token_pos
+      if position_change >= 3:
+        print(f'  -- 🚨 Alarm on index {i} with position change {position_change}')
+        alarm_checks.append(check)
 
       
     error_rate = sum(errors) / len(errors)
@@ -97,6 +101,10 @@ def main():
   
   position_changed = len([rate for rate in position_rates if rate > 0])
   print(f'📈 Controlli con token che ha cambiato posizione almeno una volta: {position_changed}')
+
+  print('🚨 Controlli con token che ha cambiato posizione almeno 3 volte:')
+  for check in alarm_checks:
+    print(f'  - {check}')
 
 
 # Main
