@@ -481,6 +481,9 @@ def run():
       for key, result in zip(batch_keys, results):
         r_node_inferences_db.set(key, result)
 
+    # Update ping
+    r_nodes_db.set(str(NODE_ID), 1, ex=600)
+
     # Take list of other nodes from the r_nodes_db
     nodes = [node for node in NODES if node != int(NODE_ID)]
     # Sort nodes randomly
