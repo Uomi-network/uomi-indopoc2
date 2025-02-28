@@ -240,7 +240,7 @@ def execute_batch_inferences(batch_prompts, batch_keys):
       "execution_data": all_execution_data[i],
       "executed_by": NODE_ID,
       "executed_in": time.time() - time_start,
-      "full_sequence_length": full_sequence_length,
+      "full_sequence_length": full_sequence_length
     }
     results.append(json.dumps(result))
     print(f"✅ Inference {i} completed")
